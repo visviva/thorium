@@ -27,6 +27,10 @@ impl<'a> Vm<'a> {
     }
 
     pub fn interpret(&mut self) -> Result<(), InterpretError> {
+        if cfg!(debug_assertions) {
+            println!("{}", format!("\nVM Running\n").magenta().underline().bold());
+        }
+
         while self.ip < self.chunk.code.len() {
             let instruction = self.read_instruction()?;
 
@@ -130,6 +134,8 @@ impl<'a> Vm<'a> {
 }
 
 pub fn interpret(source: String) -> Result<(), InterpretError> {
-    compiler::compile(source);
-    return Ok(());
+    let chunk = compiler::compile(source)?;
+    let mut vm = Vm::init(&chunk);
+    let _ = vm.interpret()?;
+    Ok(())
 }

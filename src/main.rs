@@ -85,8 +85,11 @@ fn repl() {
         if line == "\n" {
             break;
         };
-        compiler::compile(line);
-        // let _ = vm::interpret(line);
+
+        // if line.chars().last().unwrap() != '\0' {
+        // }
+
+        let _ = vm::interpret(line);
     }
 }
 

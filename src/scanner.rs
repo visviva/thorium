@@ -1,13 +1,14 @@
+use arcstr::{ArcStr, Substr};
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 
 pub struct Scanner {
-    pub source: String,
+    pub source: ArcStr,
     start: usize,
     current: usize,
     line: usize,
 }
 
-#[derive(Debug, Eq, PartialEq, TryFromPrimitive, IntoPrimitive)]
+#[derive(Debug, Clone, Eq, PartialEq, TryFromPrimitive, IntoPrimitive, Hash)]
 #[repr(u8)]
 pub enum TokenType {
     // Single-character tokens.
@@ -56,26 +57,26 @@ pub enum TokenType {
     Error,
     Eof,
 }
-
-pub struct Token<'a> {
+#[derive(Debug, Clone)]
+pub struct Token {
     pub token_type: TokenType,
-    pub lexeme: &'a str,
+    pub lexeme: Substr,
     pub line: usize,
 }
 
-impl<'a> Token<'a> {
-    pub fn make_token(tt: TokenType, lexeme: &'a str, line: usize) -> Self {
+impl Token {
+    pub fn make_token(tt: TokenType, lexeme: &str, line: usize) -> Self {
         Token {
             token_type: tt,
-            lexeme: lexeme,
+            lexeme: Substr::from(lexeme),
             line: line,
         }
     }
 
-    pub fn make_error_token(error: &'a str, line: usize) -> Self {
+    pub fn make_error_token(error: &str, line: usize) -> Self {
         Token {
             token_type: TokenType::Error,
-            lexeme: error,
+            lexeme: Substr::from(error),
             line: line,
         }
     }
@@ -84,7 +85,7 @@ impl<'a> Token<'a> {
 impl Scanner {
     pub fn init(source: String) -> Self {
         Scanner {
-            source: source,
+            source: ArcStr::from(source),
             start: 0,
             current: 0,
             line: 1,
