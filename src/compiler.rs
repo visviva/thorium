@@ -28,7 +28,7 @@ impl Precedence {
     pub fn higher_precedence(p: Precedence) -> Precedence {
         match <Precedence as TryInto<u8>>::try_into(p) {
             Ok(value) => Precedence::try_from_primitive(value + 1).unwrap(),
-            Err(_) => Precedence::Primary,
+            Err(_) => panic!("Cannot detect precedence."),
         }
     }
 }

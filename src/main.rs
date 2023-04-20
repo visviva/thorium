@@ -45,50 +45,15 @@ fn main() {
     } else {
         run_file(&args.arg_path);
     }
-
-    // let mut chunk = chunk::Chunk::init();
-
-    // let new_constant = chunk.add_constant(1.32);
-    // chunk.write(chunk::OpCode::Constant.into(), 1);
-    // chunk.write(new_constant as u8, 1);
-
-    // let new_constant = chunk.add_constant(2.32);
-    // chunk.write(chunk::OpCode::Constant.into(), 2);
-    // chunk.write(new_constant as u8, 2);
-
-    // let new_constant = chunk.add_constant(3.32);
-    // chunk.write(chunk::OpCode::Constant.into(), 3);
-    // chunk.write(new_constant as u8, 3);
-
-    // chunk.write(chunk::OpCode::Negate.into(), 4);
-
-    // chunk.write(chunk::OpCode::Add.into(), 5);
-
-    // chunk.write(chunk::OpCode::Return.into(), 6);
-
-    // chunk.disassemble("Chunk");
-
-    // println!("\nStart VM");
-
-    // let mut emulator = vm::Vm::init(&chunk);
-    // let result = emulator.interpret();
-    // match result {
-    //     Ok(_) => println!("Program Successful."),
-    //     Err(e) => println!("Program Error: {e}"),
-    // }
 }
 
 fn repl() {
     loop {
         let line = prompt_reply("> ").unwrap();
-        let line = line.add("\0");
-        if line == "\n" {
+        if line == "" {
             break;
         };
-
-        // if line.chars().last().unwrap() != '\0' {
-        // }
-
+        let line = line.add("\0");
         let _ = vm::interpret(line);
     }
 }
