@@ -13,6 +13,13 @@ pub enum OpCode {
     Subtract,
     Divide,
     Multiply,
+    True,
+    False,
+    Nil,
+    Not,
+    Equal,
+    Greater,
+    Less,
 }
 
 pub struct Chunk {
@@ -70,6 +77,13 @@ impl Chunk {
                     OpCode::Subtract => offset = display_simple_instruction(&code, offset, self),
                     OpCode::Divide => offset = display_simple_instruction(&code, offset, self),
                     OpCode::Multiply => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::True => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::False => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Nil => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Not => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Equal => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Greater => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Less => offset = display_simple_instruction(&code, offset, self),
                 }
             }
         }

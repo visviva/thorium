@@ -37,7 +37,7 @@ fn main() {
 
     if args.flag_version {
         println!("{}", env!("CARGO_PKG_VERSION"));
-        return ;
+        return;
     }
 
     if args.arg_path.is_empty() {

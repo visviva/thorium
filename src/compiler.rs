@@ -5,6 +5,7 @@ use num_enum::{IntoPrimitive, TryFromPrimitive};
 use crate::{
     chunk::{Chunk, OpCode},
     scanner::{self, Token, TokenType},
+    value::Value,
     vm::InterpretError,
 };
 
@@ -151,7 +152,7 @@ impl Parser {
                 (
                     TokenType::Bang,
                     ParseRule {
-                        prefix: None,
+                        prefix: Some(Self::unary),
                         infix: None,
                         precedence: Precedence::None,
                     },
@@ -160,8 +161,8 @@ impl Parser {
                     TokenType::Bangequal,
                     ParseRule {
                         prefix: None,
-                        infix: None,
-                        precedence: Precedence::None,
+                        infix: Some(Self::binary),
+                        precedence: Precedence::Equality,
                     },
                 ),
                 (
@@ -176,40 +177,40 @@ impl Parser {
                     TokenType::Equalequal,
                     ParseRule {
                         prefix: None,
-                        infix: None,
-                        precedence: Precedence::None,
+                        infix: Some(Self::binary),
+                        precedence: Precedence::Equality,
                     },
                 ),
                 (
                     TokenType::Greater,
                     ParseRule {
                         prefix: None,
-                        infix: None,
-                        precedence: Precedence::None,
+                        infix: Some(Self::binary),
+                        precedence: Precedence::Comparison,
                     },
                 ),
                 (
                     TokenType::Greaterequal,
                     ParseRule {
                         prefix: None,
-                        infix: None,
-                        precedence: Precedence::None,
+                        infix: Some(Self::binary),
+                        precedence: Precedence::Comparison,
                     },
                 ),
                 (
                     TokenType::Less,
                     ParseRule {
                         prefix: None,
-                        infix: None,
-                        precedence: Precedence::None,
+                        infix: Some(Self::binary),
+                        precedence: Precedence::Comparison,
                     },
                 ),
                 (
                     TokenType::Lessequal,
                     ParseRule {
                         prefix: None,
-                        infix: None,
-                        precedence: Precedence::None,
+                        infix: Some(Self::binary),
+                        precedence: Precedence::Comparison,
                     },
                 ),
                 (
@@ -263,7 +264,7 @@ impl Parser {
                 (
                     TokenType::False,
                     ParseRule {
-                        prefix: None,
+                        prefix: Some(Self::literal),
                         infix: None,
                         precedence: Precedence::None,
                     },
@@ -295,7 +296,7 @@ impl Parser {
                 (
                     TokenType::Nil,
                     ParseRule {
-                        prefix: None,
+                        prefix: Some(Self::literal),
                         infix: None,
                         precedence: Precedence::None,
                     },
@@ -343,7 +344,7 @@ impl Parser {
                 (
                     TokenType::True,
                     ParseRule {
-                        prefix: None,
+                        prefix: Some(Self::literal),
                         infix: None,
                         precedence: Precedence::None,
                     },
@@ -467,18 +468,19 @@ impl Parser {
     }
 
     fn number(&mut self) {
-        if let Ok(value) = self.previous.lexeme.parse::<f32>() {
+        if let Ok(value) = self.previous.lexeme.parse() {
+            let value = Value::Number(value);
             self.emit_constant(value);
         }
     }
 
-    fn emit_constant(&mut self, value: f32) {
+    fn emit_constant(&mut self, value: Value) {
         let op: u8 = OpCode::Constant.into();
         let index: u8 = self.make_constant(value);
         self.emit_bytes(&[op, index])
     }
 
-    fn make_constant(&mut self, value: f32) -> u8 {
+    fn make_constant(&mut self, value: Value) -> u8 {
         let index = self.current_chunk().add_constant(value);
         if index > u8::MAX as usize {
             self.error("Too many constants in one chunk");
@@ -498,8 +500,10 @@ impl Parser {
 
         self.parse_precedence(Precedence::Unary);
 
-        if op_type == TokenType::Minus {
-            self.emit_byte(OpCode::Negate.into())
+        match op_type {
+            TokenType::Minus => self.emit_byte(OpCode::Negate.into()),
+            TokenType::Bang => self.emit_byte(OpCode::Not.into()),
+            _ => unreachable!(),
         }
     }
 
@@ -513,7 +517,22 @@ impl Parser {
             TokenType::Minus => self.emit_byte(OpCode::Subtract.into()),
             TokenType::Star => self.emit_byte(OpCode::Multiply.into()),
             TokenType::Slash => self.emit_byte(OpCode::Divide.into()),
-            _ => (),
+            TokenType::Bangequal => self.emit_bytes(&[OpCode::Equal.into(), OpCode::Not.into()]),
+            TokenType::Equalequal => self.emit_byte(OpCode::Equal.into()),
+            TokenType::Greater => self.emit_byte(OpCode::Greater.into()),
+            TokenType::Greaterequal => self.emit_bytes(&[OpCode::Less.into(), OpCode::Not.into()]),
+            TokenType::Less => self.emit_byte(OpCode::Less.into()),
+            TokenType::Lessequal => self.emit_bytes(&[OpCode::Greater.into(), OpCode::Not.into()]),
+            _ => unreachable!(),
+        }
+    }
+
+    fn literal(&mut self) {
+        match self.previous.token_type {
+            TokenType::False => self.emit_byte(OpCode::False.into()),
+            TokenType::True => self.emit_byte(OpCode::True.into()),
+            TokenType::Nil => self.emit_byte(OpCode::Nil.into()),
+            _ => unreachable!(),
         }
     }
 

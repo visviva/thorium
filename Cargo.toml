@@ -10,6 +10,7 @@ arcstr = "1.1.5"
 colored = "2.0.0"
 custom_error = "1.9.2"
 num_enum = "0.6.1"
+pretty-hex = "0.3.0"
 qsv_docopt = "1"
 rprompt = "2.0.2"
 serde = { version = "1", features = ["derive"] }

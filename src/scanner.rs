@@ -271,10 +271,15 @@ impl Scanner {
     }
 
     fn parse_identifier(&mut self) -> Token {
-        let mut c = self.peek();
-        while c.is_alphanumeric() {
-            c = self.advance();
+        loop {
+            let c = self.peek();
+            if c.is_alphanumeric() {
+                let _ = self.advance();
+            } else {
+                break;
+            }
         }
+
         let token_type = self.get_identifier_type();
         self.make_token(token_type)
     }
@@ -327,7 +332,7 @@ impl Scanner {
         let length = rest.len();
         let substring_start = self.start + start;
         let to_be_matched = &self.source[substring_start..(substring_start + length)];
-        if ((self.current - self.start) == (start + length + 1)) && to_be_matched == rest {
+        if ((self.current - self.start) == (start + length)) && to_be_matched == rest {
             token_type
         } else {
             TokenType::Identifier

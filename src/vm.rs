@@ -1,7 +1,7 @@
 use crate::{
     chunk::{display, Chunk, OpCode},
     compiler,
-    value::Value,
+    value::{Value, ValueArray},
 };
 use colored::Colorize;
 use custom_error::custom_error;
@@ -9,7 +9,7 @@ use custom_error::custom_error;
 pub struct Vm<'a> {
     chunk: &'a Chunk,
     ip: usize,
-    stack: Vec<Value>,
+    stack: ValueArray,
 }
 
 custom_error! { pub InterpretError
@@ -22,23 +22,23 @@ impl<'a> Vm<'a> {
         Vm {
             chunk,
             ip: 0,
-            stack: Vec::new(),
+            stack: ValueArray::init(),
         }
     }
 
     pub fn interpret(&mut self) -> Result<(), InterpretError> {
         if cfg!(debug_assertions) {
-            println!("{}", "\nVM Running\n".to_string().magenta().underline().bold());
+            println!(
+                "{}",
+                "\nVM Running\n".to_string().magenta().underline().bold()
+            );
         }
 
         while self.ip < self.chunk.code.len() {
             let instruction = self.read_instruction()?;
 
             if cfg!(debug_assertions) {
-                println!(
-                    "{}",
-                    format!("{:?} top", self.stack).truecolor(234, 142, 68)
-                );
+                println!("{}", format!("{} top", self.stack).truecolor(234, 142, 68));
                 display(self.chunk, Some(&instruction), self.ip - 1, "");
             }
 
@@ -47,7 +47,7 @@ impl<'a> Vm<'a> {
                     let value = self.stack.pop();
                     return match value {
                         Some(v) => {
-                            println!("{v:?}");
+                            println!("{v}");
                             return Ok(());
                         }
                         None => {
@@ -65,7 +65,14 @@ impl<'a> Vm<'a> {
                 OpCode::Negate => {
                     let value = self.stack.pop();
                     match value {
-                        Some(v) => self.stack.push(-v),
+                        Some(v) => {
+                            if let Value::Number(n) = v {
+                                self.stack.push(Value::Number(-n))
+                            } else {
+                                self.runtime_error("Operand must be a number");
+                                return Err(InterpretError::RuntimeError);
+                            }
+                        }
                         None => {
                             println!("Stack Underflow");
                             return Err(InterpretError::RuntimeError);
@@ -89,26 +96,78 @@ impl<'a> Vm<'a> {
                     let value = self.binary_op(|a, b| a * b)?;
                     self.stack.push(value);
                 }
+                OpCode::True => self.stack.push(Value::Boolean(true)),
+                OpCode::False => self.stack.push(Value::Boolean(false)),
+                OpCode::Nil => self.stack.push(Value::Nil),
+                OpCode::Not => {
+                    let v = self.stack.pop();
+                    if let Some(v) = v {
+                        match v {
+                            Value::Boolean(b) => self.stack.push(Value::Boolean(!b)),
+                            Value::Nil => self.stack.push(Value::Boolean(true)),
+                            _ => self.stack.push(Value::Boolean(false)),
+                        }
+                    } else {
+                        self.runtime_error("Stack underflow");
+                        return Err(InterpretError::RuntimeError);
+                    }
+                }
+                OpCode::Equal => {
+                    let value = self.equal_op();
+                    if let Ok(value) = value {
+                        self.stack.push(value);
+                    }
+                }
+                OpCode::Greater => {
+                    let value = self.compare_op(|a, b| a > b);
+                    if let Ok(value) = value {
+                        self.stack.push(value);
+                    }
+                }
+                OpCode::Less => {
+                    let value = self.compare_op(|a, b| a < b);
+                    if let Ok(value) = value {
+                        self.stack.push(value);
+                    }
+                }
             }
         }
 
         Ok(())
     }
 
-    fn binary_op<F: Fn(Value, Value) -> Value>(&mut self, op: F) -> Result<Value, InterpretError> {
+    fn equal_op(&mut self) -> Result<Value, InterpretError> {
         let b = self.stack.pop();
-
-        if b.is_none() {
-            return Err(InterpretError::RuntimeError);
-        }
-
         let a = self.stack.pop();
 
-        if a.is_none() {
-            return Err(InterpretError::RuntimeError);
+        if let (Some(a), Some(b)) = (a, b) {
+            Ok(Value::Boolean(a == b))
+        } else {
+            Err(InterpretError::RuntimeError)
         }
+    }
 
-        Ok(op(a.unwrap(), b.unwrap()))
+    fn compare_op<F: Fn(Value, Value) -> bool>(&mut self, op: F) -> Result<Value, InterpretError> {
+        let b = self.stack.pop();
+        let a = self.stack.pop();
+
+        if let (Some(a), Some(b)) = (a, b) {
+            Ok(Value::Boolean(op(a, b)))
+        } else {
+            Err(InterpretError::RuntimeError)
+        }
+    }
+
+    fn binary_op<F: Fn(f32, f32) -> f32>(&mut self, op: F) -> Result<Value, InterpretError> {
+        let b = self.stack.pop();
+        let a = self.stack.pop();
+
+        if let (Some(Value::Number(a)), Some(Value::Number(b))) = (a, b) {
+            Ok(Value::Number(op(a, b)))
+        } else {
+            self.runtime_error("Operand must be a number");
+            Err(InterpretError::RuntimeError)
+        }
     }
 
     fn read_byte(&mut self) -> u8 {
@@ -119,7 +178,7 @@ impl<'a> Vm<'a> {
 
     fn read_constant(&mut self) -> Value {
         let index = self.read_byte();
-        
+
         self.chunk.constants.values[index as usize]
     }
 
@@ -130,6 +189,14 @@ impl<'a> Vm<'a> {
             Ok(value) => Ok(value),
             Err(_) => Err(InterpretError::RuntimeError),
         }
+    }
+
+    fn runtime_error(&mut self, arg: &str) {
+        eprintln!("{}", arg);
+
+        let line = self.chunk.lines[self.ip - 1];
+        eprintln!("[line {line}] in script");
+        self.stack.reset();
     }
 }
 
