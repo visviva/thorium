@@ -498,9 +498,8 @@ impl Parser {
 
         self.parse_precedence(Precedence::Unary);
 
-        match op_type {
-            TokenType::Minus => self.emit_byte(OpCode::Negate.into()),
-            _ => return,
+        if op_type == TokenType::Minus {
+            self.emit_byte(OpCode::Negate.into())
         }
     }
 
@@ -539,8 +538,8 @@ impl Parser {
         {
             self.advance();
             let infix_rule = self.get_rule(&self.previous.token_type).infix;
-            if infix_rule.is_some() {
-                infix_rule.unwrap()(self);
+            if let Some(rule) = infix_rule {
+                rule(self);
             }
         }
     }

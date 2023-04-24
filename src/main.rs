@@ -10,7 +10,7 @@ use qsv_docopt::Docopt;
 use rprompt::prompt_reply;
 use serde::Deserialize;
 
-const USAGE: &'static str = "
+const USAGE: &str = "
 Thorium virtual machine.
 
 Usage:
@@ -37,7 +37,7 @@ fn main() {
 
     if args.flag_version {
         println!("{}", env!("CARGO_PKG_VERSION"));
-        return ();
+        return ;
     }
 
     if args.arg_path.is_empty() {
@@ -50,7 +50,7 @@ fn main() {
 fn repl() {
     loop {
         let line = prompt_reply("> ").unwrap();
-        if line == "" {
+        if line.is_empty() {
             break;
         };
         let line = line.add("\0");

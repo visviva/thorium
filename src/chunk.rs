@@ -63,13 +63,13 @@ impl Chunk {
 
             if let Ok(code) = op_code {
                 match code {
-                    OpCode::Return => offset = display_simple_instruction(&code, offset, &self),
-                    OpCode::Constant => offset = display_constant_instruction(&code, offset, &self),
-                    OpCode::Negate => offset = display_simple_instruction(&code, offset, &self),
-                    OpCode::Add => offset = display_simple_instruction(&code, offset, &self),
-                    OpCode::Subtract => offset = display_simple_instruction(&code, offset, &self),
-                    OpCode::Divide => offset = display_simple_instruction(&code, offset, &self),
-                    OpCode::Multiply => offset = display_simple_instruction(&code, offset, &self),
+                    OpCode::Return => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Constant => offset = display_constant_instruction(&code, offset, self),
+                    OpCode::Negate => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Add => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Subtract => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Divide => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Multiply => offset = display_simple_instruction(&code, offset, self),
                 }
             }
         }
@@ -81,21 +81,21 @@ pub fn display(chunk: &Chunk, op: Option<&OpCode>, offset: usize, data: &str) {
         "{:0>4}\t{}\t{} {}",
         format!("{:?}", offset).green(),
         if (offset > 0) && (chunk.lines[offset] == chunk.lines[offset - 1]) {
-            format!("|")
+            "|".to_string()
         } else {
             format!("{}", chunk.lines[offset])
         },
         if let Some(mnemonic) = op {
             format!("{:?}", mnemonic).blue().bold()
         } else {
-            format!("{}", "Unknown OP").red().bold()
+            "Unknown OP".to_string().red().bold()
         },
         data
     );
 }
 
 fn display_simple_instruction(op: &OpCode, offset: usize, chunk: &Chunk) -> usize {
-    display(chunk, Some(&op), offset, "");
+    display(chunk, Some(op), offset, "");
     offset + 1
 }
 
@@ -104,7 +104,7 @@ fn display_constant_instruction(op: &OpCode, offset: usize, chunk: &Chunk) -> us
     let constant_value = chunk.constants.values[constant_index as usize];
     display(
         chunk,
-        Some(&op),
+        Some(op),
         offset,
         &format!("Index={constant_index} Value={constant_value}"),
     );

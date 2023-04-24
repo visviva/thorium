@@ -69,7 +69,7 @@ impl Token {
         Token {
             token_type: tt,
             lexeme: Substr::from(lexeme),
-            line: line,
+            line,
         }
     }
 
@@ -77,7 +77,7 @@ impl Token {
         Token {
             token_type: TokenType::Error,
             lexeme: Substr::from(error),
-            line: line,
+            line,
         }
     }
 }
@@ -107,69 +107,69 @@ impl Scanner {
             return self.parse_identifier();
         }
 
-        if c.is_digit(10) {
+        if c.is_ascii_digit() {
             return self.parse_number();
         }
 
         match c {
-            '(' => return self.make_token(TokenType::Leftparen),
-            ')' => return self.make_token(TokenType::Rightparen),
-            '{' => return self.make_token(TokenType::Leftbrace),
-            '}' => return self.make_token(TokenType::Rightbrace),
-            ';' => return self.make_token(TokenType::Semicolon),
-            ',' => return self.make_token(TokenType::Comma),
-            '.' => return self.make_token(TokenType::Dot),
-            '-' => return self.make_token(TokenType::Minus),
-            '+' => return self.make_token(TokenType::Plus),
-            '/' => return self.make_token(TokenType::Slash),
-            '*' => return self.make_token(TokenType::Star),
+            '(' => self.make_token(TokenType::Leftparen),
+            ')' => self.make_token(TokenType::Rightparen),
+            '{' => self.make_token(TokenType::Leftbrace),
+            '}' => self.make_token(TokenType::Rightbrace),
+            ';' => self.make_token(TokenType::Semicolon),
+            ',' => self.make_token(TokenType::Comma),
+            '.' => self.make_token(TokenType::Dot),
+            '-' => self.make_token(TokenType::Minus),
+            '+' => self.make_token(TokenType::Plus),
+            '/' => self.make_token(TokenType::Slash),
+            '*' => self.make_token(TokenType::Star),
 
             '!' => {
                 let matched = self.match_char('=');
-                return self.make_token(if matched {
+                self.make_token(if matched {
                     TokenType::Bangequal
                 } else {
                     TokenType::Bang
-                });
+                })
             }
 
             '=' => {
                 let matched = self.match_char('=');
-                return self.make_token(if matched {
+                self.make_token(if matched {
                     TokenType::Equalequal
                 } else {
                     TokenType::Equal
-                });
+                })
             }
 
             '<' => {
                 let matched = self.match_char('=');
-                return self.make_token(if matched {
+                self.make_token(if matched {
                     TokenType::Lessequal
                 } else {
                     TokenType::Less
-                });
+                })
             }
 
             '>' => {
                 let matched = self.match_char('=');
-                return self.make_token(if matched {
+                self.make_token(if matched {
                     TokenType::Greaterequal
                 } else {
                     TokenType::Greater
-                });
+                })
             }
 
             '"' => self.parse_string(),
             '\0' => self.make_token(TokenType::Eof),
 
-            _ => return Token::make_error_token("Unexpected character.", self.line),
+            _ => Token::make_error_token("Unexpected character.", self.line),
         }
     }
 
     fn make_token(&mut self, t: TokenType) -> Token {
         let lexeme = &self.source[self.start..self.current];
-        return Token::make_token(t, lexeme, self.line);
+        Token::make_token(t, lexeme, self.line)
     }
 
     fn is_at_end(&self) -> bool {
@@ -255,15 +255,15 @@ impl Scanner {
     }
 
     fn parse_number(&mut self) -> Token {
-        while self.peek().is_digit(10) {
+        while self.peek().is_ascii_digit() {
             self.advance();
         }
 
-        if self.peek() == '.' && self.peek_next().is_digit(10) {
+        if self.peek() == '.' && self.peek_next().is_ascii_digit() {
             self.advance();
         }
 
-        while self.peek().is_digit(10) {
+        while self.peek().is_ascii_digit() {
             self.advance();
         }
 

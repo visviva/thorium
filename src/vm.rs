@@ -20,7 +20,7 @@ custom_error! { pub InterpretError
 impl<'a> Vm<'a> {
     pub fn init(chunk: &'a Chunk) -> Self {
         Vm {
-            chunk: chunk,
+            chunk,
             ip: 0,
             stack: Vec::new(),
         }
@@ -28,7 +28,7 @@ impl<'a> Vm<'a> {
 
     pub fn interpret(&mut self) -> Result<(), InterpretError> {
         if cfg!(debug_assertions) {
-            println!("{}", format!("\nVM Running\n").magenta().underline().bold());
+            println!("{}", "\nVM Running\n".to_string().magenta().underline().bold());
         }
 
         while self.ip < self.chunk.code.len() {
@@ -98,13 +98,13 @@ impl<'a> Vm<'a> {
     fn binary_op<F: Fn(Value, Value) -> Value>(&mut self, op: F) -> Result<Value, InterpretError> {
         let b = self.stack.pop();
 
-        if let None = b {
+        if b.is_none() {
             return Err(InterpretError::RuntimeError);
         }
 
         let a = self.stack.pop();
 
-        if let None = a {
+        if a.is_none() {
             return Err(InterpretError::RuntimeError);
         }
 
@@ -119,8 +119,8 @@ impl<'a> Vm<'a> {
 
     fn read_constant(&mut self) -> Value {
         let index = self.read_byte();
-        let constant = self.chunk.constants.values[index as usize];
-        constant
+        
+        self.chunk.constants.values[index as usize]
     }
 
     fn read_instruction(&mut self) -> Result<OpCode, InterpretError> {
@@ -136,6 +136,6 @@ impl<'a> Vm<'a> {
 pub fn interpret(source: String) -> Result<(), InterpretError> {
     let chunk = compiler::compile(source)?;
     let mut vm = Vm::init(&chunk);
-    let _ = vm.interpret()?;
+    vm.interpret()?;
     Ok(())
 }
