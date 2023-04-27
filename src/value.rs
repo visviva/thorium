@@ -1,6 +1,6 @@
 use std::{cmp::Ordering, fmt, ops};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum Value {
     Boolean(bool),
     Nil,
@@ -120,10 +120,10 @@ impl ValueArray {
         self.values.clear()
     }
 
-    // pub fn peek(&self, distance: usize) -> Option<&Value> {
-    //     let index = self.values.len() - 1 - distance;
-    //     Some(&self.values[index])
-    // }
+    pub fn peek(&self, distance: usize) -> Option<&Value> {
+        let index = self.values.len() - 1 - distance;
+        Some(&self.values[index])
+    }
 }
 
 impl fmt::Display for ValueArray {

@@ -20,6 +20,11 @@ pub enum OpCode {
     Equal,
     Greater,
     Less,
+    Print,
+    Pop,
+    DefineGlobal,
+    GetGlobal,
+    SetGlobal,
 }
 
 pub struct Chunk {
@@ -70,20 +75,28 @@ impl Chunk {
 
             if let Ok(code) = op_code {
                 match code {
-                    OpCode::Return => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Constant => offset = display_constant_instruction(&code, offset, self),
-                    OpCode::Negate => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Add => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Subtract => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Divide => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Multiply => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::True => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::False => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Nil => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Not => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Equal => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Greater => offset = display_simple_instruction(&code, offset, self),
-                    OpCode::Less => offset = display_simple_instruction(&code, offset, self),
+                    OpCode::Return
+                    | OpCode::Negate
+                    | OpCode::Add
+                    | OpCode::Subtract
+                    | OpCode::Divide
+                    | OpCode::Multiply
+                    | OpCode::True
+                    | OpCode::False
+                    | OpCode::Nil
+                    | OpCode::Not
+                    | OpCode::Equal
+                    | OpCode::Greater
+                    | OpCode::Less
+                    | OpCode::Print
+                    | OpCode::Pop => offset = display_simple_instruction(&code, offset, self),
+
+                    OpCode::Constant
+                    | OpCode::DefineGlobal
+                    | OpCode::GetGlobal
+                    | OpCode::SetGlobal => {
+                        offset = display_constant_instruction(&code, offset, self)
+                    }
                 }
             }
         }

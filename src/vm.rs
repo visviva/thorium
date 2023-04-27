@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::{
     chunk::{display, Chunk, OpCode},
     compiler,
@@ -10,6 +12,7 @@ pub struct Vm<'a> {
     chunk: &'a Chunk,
     ip: usize,
     stack: ValueArray,
+    globals: HashMap<String, Value>,
 }
 
 custom_error! { pub InterpretError
@@ -23,6 +26,7 @@ impl<'a> Vm<'a> {
             chunk,
             ip: 0,
             stack: ValueArray::init(),
+            globals: HashMap::new(),
         }
     }
 
@@ -44,17 +48,7 @@ impl<'a> Vm<'a> {
 
             match instruction {
                 OpCode::Return => {
-                    let value = self.stack.pop();
-                    return match value {
-                        Some(v) => {
-                            println!("{v}");
-                            return Ok(());
-                        }
-                        None => {
-                            println!("Stack Underflow");
-                            Err(InterpretError::RuntimeError)
-                        }
-                    };
+                    return Ok(());
                 }
 
                 OpCode::Constant => {
@@ -128,6 +122,82 @@ impl<'a> Vm<'a> {
                     let value = self.compare_op(|a, b| a < b);
                     if let Ok(value) = value {
                         self.stack.push(value);
+                    }
+                }
+                OpCode::Print => {
+                    if let Some(v) = self.stack.pop() {
+                        println!("{v}");
+                    } else {
+                        println!("Stack Underflow");
+                        return Err(InterpretError::RuntimeError);
+                    }
+                }
+                OpCode::Pop => {
+                    let v = self.stack.pop();
+                    if v.is_none() {
+                        println!("Stack Underflow");
+                        return Err(InterpretError::RuntimeError);
+                    }
+                }
+                OpCode::DefineGlobal => {
+                    let name = self.read_constant();
+
+                    match name {
+                        Value::DynamicString(name) => {
+                            if let Some(v) = self.stack.peek(0) {
+                                self.globals.insert(name, v.clone());
+                                self.stack.pop();
+                            }
+                        }
+                        _ => {
+                            println!("Variable specifier must be a string.");
+                            return Err(InterpretError::RuntimeError);
+                        }
+                    }
+                }
+                OpCode::GetGlobal => {
+                    let name = self.read_constant();
+
+                    match name {
+                        Value::DynamicString(name) => {
+                            let value = self.globals.get(&name);
+                            if let Some(value) = value {
+                                self.stack.push(value.clone());
+                            } else {
+                                println!("Variable {name} is not known.");
+                                return Err(InterpretError::RuntimeError);
+                            }
+                        }
+                        _ => {
+                            println!("Variable specifier must be a string.");
+                            return Err(InterpretError::RuntimeError);
+                        }
+                    }
+                }
+                OpCode::SetGlobal => {
+                    let name = self.read_constant();
+
+                    match name {
+                        Value::DynamicString(name) => {
+                            match (self.globals.get(&name.clone()), self.stack.peek(0)) {
+                                (None, None) => return Err(InterpretError::RuntimeError),
+                                (None, Some(_)) => {
+                                    println!("Unknown variable.");
+                                    return Err(InterpretError::RuntimeError);
+                                }
+                                (Some(_), None) => {
+                                    println!("Stack underflow.");
+                                    return Err(InterpretError::RuntimeError);
+                                }
+                                (Some(_), Some(value)) => {
+                                    self.globals.insert(name.to_string(), value.clone());
+                                }
+                            }
+                        }
+                        _ => {
+                            println!("Variable specifier must be a string.");
+                            return Err(InterpretError::RuntimeError);
+                        }
                     }
                 }
             }
