@@ -115,7 +115,7 @@ fn display_simple_instruction(op: &OpCode, offset: usize, chunk: &Chunk) -> usiz
 
 fn display_constant_instruction(op: &OpCode, offset: usize, chunk: &Chunk) -> usize {
     let constant_index = chunk.code[offset + 1];
-    let constant_value = chunk.constants.values[constant_index as usize];
+    let constant_value = chunk.constants.values[constant_index as usize].clone();
     display(
         chunk,
         Some(op),

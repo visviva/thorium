@@ -331,6 +331,11 @@ impl Scanner {
     fn check_keyword(&self, start: usize, rest: &str, token_type: TokenType) -> TokenType {
         let length = rest.len();
         let substring_start = self.start + start;
+
+        if substring_start + length >= self.source.len() {
+            return TokenType::Identifier;
+        }
+
         let to_be_matched = &self.source[substring_start..(substring_start + length)];
         if ((self.current - self.start) == (start + length)) && to_be_matched == rest {
             token_type

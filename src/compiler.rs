@@ -224,7 +224,7 @@ impl Parser {
                 (
                     TokenType::String,
                     ParseRule {
-                        prefix: None,
+                        prefix: Some(Self::string),
                         infix: None,
                         precedence: Precedence::None,
                     },
@@ -534,6 +534,11 @@ impl Parser {
             TokenType::Nil => self.emit_byte(OpCode::Nil.into()),
             _ => unreachable!(),
         }
+    }
+
+    fn string(&mut self) {
+        let v = Value::DynamicString(self.previous.lexeme.to_string());
+        self.emit_constant(v);
     }
 
     fn parse_precedence(&mut self, precedence: Precedence) {

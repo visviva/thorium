@@ -158,15 +158,16 @@ impl<'a> Vm<'a> {
         }
     }
 
-    fn binary_op<F: Fn(f32, f32) -> f32>(&mut self, op: F) -> Result<Value, InterpretError> {
+    fn binary_op<F: Fn(Value, Value) -> Value>(&mut self, op: F) -> Result<Value, InterpretError> {
         let b = self.stack.pop();
         let a = self.stack.pop();
 
-        if let (Some(Value::Number(a)), Some(Value::Number(b))) = (a, b) {
-            Ok(Value::Number(op(a, b)))
-        } else {
-            self.runtime_error("Operand must be a number");
-            Err(InterpretError::RuntimeError)
+        match (a, b) {
+            (Some(a), Some(b)) => Ok(op(a, b)),
+            _ => {
+                self.runtime_error("Operand must be a number");
+                Err(InterpretError::RuntimeError)
+            }
         }
     }
 
@@ -179,7 +180,7 @@ impl<'a> Vm<'a> {
     fn read_constant(&mut self) -> Value {
         let index = self.read_byte();
 
-        self.chunk.constants.values[index as usize]
+        self.chunk.constants.values[index as usize].clone()
     }
 
     fn read_instruction(&mut self) -> Result<OpCode, InterpretError> {
